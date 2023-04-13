@@ -1,0 +1,642 @@
+﻿@page "/kanban"
+@using Kanban_EntityFramework_RepositoryPattern.Shared
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject IJSRuntime jsRuntime
+
+<div name="ProjectContainer">
+
+    <div class="dropdown">
+        <h3> <MudIcon Icon="@Icons.Material.Filled.Assignment" /> @projectPlaceholder.Name </h3>
+        <div class="dropdown-content rounded-lg border-1">
+            <button name="btnAddProject" @onclick=@(() => AddProject())><MudIcon Icon="@Icons.Material.Filled.Add" /> New Project</button>
+            @foreach (var project in listProjects)
+            {
+                <hr />
+                <button @onclick=@(() => SelectProject(project.Name))>@(project.Name)</button>
+            }
+        </div>
+    </div>
+
+    @if (editProjectVisible)
+    {
+        <button name="btnEditProject" @onclick=@(() => projectDialogueVisible = ModalDialogueVisibility(projectDialogueVisible))><MudIcon style="padding-bottom:8" Icon="@Icons.Material.Filled.BorderColor" /></button> <!-- Edit project name button? Or modal when new project? -->
+    }
+
+    <hr />
+</div>
+
+<div name="SectionsContainer">
+
+    @if (addSectionVisible)
+    {
+        <button name="btnAddSection" class="btn btn-secondary ma-2" @onclick=@(() => AddSection())>Add Section <MudIcon Icon="@Icons.Material.Filled.Add" /></button>
+    }
+
+    <MudDropContainer T="TaskItem" DraggingClass="mud-alert-text-warning" ItemDraggingClass="mud-alert-text-warning" Items="listTaskItems" ItemsSelector="@((item,dropzone) => item.SectionIdentifier == dropzone)" NoDropClass="mud-border-error" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-1">
+        <ChildContent>
+            @foreach (var section in listSections)
+            {
+                if (section.ProjectId == projectPlaceholder.Id)
+                {
+                    <MudDropZone T="TaskItem" Identifier=@(section.Id.ToString()) Class="rounded-lg border-2 mud-border-lines-default pa-3 ma-2" Style="background-color:lightgray">
+                        <!-- Maybe able to choose color? -->
+                        <MudText Typo="Typo.h6" Class="mb-4">@(section.Name)&ensp;<button name="btnEditProject" @onclick=@(() => SetDialogueInfoSection(section))><MudIcon style="padding-bottom:7" Icon="@Icons.Material.Filled.BorderColor" /></button>&ensp;<button name="btnEditProject" style="font-size:small" @onclick=@(() => AddTaskItem(section.Id.ToString()))><MudIcon style="padding-bottom:2" Icon="@Icons.Material.Filled.Add" /></button></MudText>
+                    </MudDropZone>
+                }
+            }
+
+        </ChildContent>
+        <ItemRenderer>
+            <div class="rounded-lg border-1 mud-elevation-25 pa-2 my-3" style="background-color:white" DisableRipple="true" @onclick=@(() => SetDialogueInfoTaskItem(context))>
+                @context.Name <br />
+                @context.Points<MudIcon Icon="@Icons.Material.Filled.HistoryEdu" />
+            </div>
+        </ItemRenderer>
+    </MudDropContainer>
+
+    <hr />
+</div>
+
+<div name="ModalContainer">
+    <!-- EDIT OBJECT MODALS .-->
+    @if (projectDialogueVisible)
+    {
+        <div class="modal fade show" style="display: block;" DisableRipple="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5>Project Name: <input class="d-flex flex-wrap flex-grow-1 rounded-lg border-2" type="text" @bind="@projectPlaceholder.Name" /></h5>
+                        <button type="button" class="btn btn-danger" @onclick=@(() => deleteProjectDialogueVisible = ModalDialogueVisibility(deleteProjectDialogueVisible))><MudIcon Icon="@Icons.Material.Filled.DeleteForever" /></button>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @onclick=@(() => ProjectSaveChanges(projectPlaceholder))>Close</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (sectionDialogueVisible)
+    {
+        <div class="modal fade show" style="display: block;" DisableRipple="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5>Section Name: <input class="d-flex flex-wrap flex-grow-1 rounded-lg border-2" type="text" @bind="@sectionPlaceholder.Name" /></h5>
+                        <button type="button" class="btn btn-danger" @onclick=@(() => deleteSectionDialogueVisible = ModalDialogueVisibility(deleteSectionDialogueVisible))><MudIcon Icon="@Icons.Material.Filled.DeleteForever" /></button>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @onclick=@(() => SectionSaveChanges(sectionPlaceholder))>Close</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (taskDialogueVisible)
+    {
+        <div class="modal fade show" style="display: block;" DisableRipple="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5>Task Name: <input class="d-flex flex-wrap flex-grow-1 rounded-lg border-2" type="text" @bind="@taskItemPlaceHolder.Name" /></h5>
+                        <button type="button" class="btn btn-danger" @onclick=@(() => deleteTaskDialogueVisible = ModalDialogueVisibility(deleteTaskDialogueVisible))><MudIcon Icon="@Icons.Material.Filled.DeleteForever" /></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p style="float:left">Description:&nbsp;</p> <textarea class="rounded-lg border-2" rows="4" cols="50" type="text" @bind="@taskItemPlaceHolder.Description" />
+                        <p>Points:&ensp;&emsp;&emsp;<input class="rounded-lg border-2" type="number" @bind="@taskItemPlaceHolder.Points" /></p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @onclick=@(() => TaskItemSaveChanges(taskItemPlaceHolder))>Close</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- DELETE OBJECT MODALS -->
+
+    <!-- These could actually be refactored into 1 method, with some variables and objects being passes around -->
+    @if (deleteProjectDialogueVisible)
+    {
+        <div class="modal fade show" style="display: block;" DisableRipple="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h1>WARNING!</h1>
+                        <button type="button" class="btn btn-primary" @onclick=@(() => deleteProjectDialogueVisible = ModalDialogueVisibility(deleteProjectDialogueVisible))>Cancel</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <h5>Are you sure you want to delete this project, and all of its content? This action is irreversible!</h5>                        
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" @onclick=@(() => DeleteProject(projectPlaceholder))>Delete<MudIcon Icon="@Icons.Material.Filled.DeleteForever" /></button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (deleteSectionDialogueVisible)
+    {
+        <div class="modal fade show" style="display: block;" DisableRipple="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h1>WARNING!</h1>
+                        <button type="button" class="btn btn-primary" @onclick=@(() => deleteSectionDialogueVisible = ModalDialogueVisibility(deleteSectionDialogueVisible))>Cancel</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <h5>Are you sure you want to delete this section, and all of its content? This action is irreversible!</h5>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" @onclick=@(() => DeleteSection(sectionPlaceholder))>Delete<MudIcon Icon="@Icons.Material.Filled.DeleteForever" /></button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (deleteTaskDialogueVisible)
+    {
+        <div class="modal fade show" style="display: block;" DisableRipple="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h1>WARNING!</h1>
+                        <button type="button" class="btn btn-primary" @onclick=@(() => deleteTaskDialogueVisible = ModalDialogueVisibility(deleteTaskDialogueVisible))>Cancel</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <h5>Are you sure you want to delete this task, and all of its content? This action is irreversible!</h5>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" @onclick=@(() => DeleteTaskItem(taskItemPlaceHolder))>Delete<MudIcon Icon="@Icons.Material.Filled.DeleteForever" /></button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+<!-- TEST BUTTONS -->
+<button @onclick=@(() => OutputInfo())>Output Info</button>
+
+@code {
+    #region DATATYPES
+
+    // OBJECT PLACEHOLDERS
+    static Project noProject = new Project(-1, "Select Project");
+    Project projectPlaceholder = noProject;
+    Section? sectionPlaceholder;
+    TaskItem? taskItemPlaceHolder;
+
+    // OBJECT LISTS
+    private List<Project> listProjects = new List<Project>();
+    private List<Section> listSections = new List<Section>();
+    private List<TaskItem> listTaskItems = new List<TaskItem>();
+
+    // MODAL VISIBILITY BOOLS
+    bool projectDialogueVisible = false;
+    bool sectionDialogueVisible = false;
+    bool taskDialogueVisible = false;
+    bool deleteProjectDialogueVisible = false;
+    bool deleteSectionDialogueVisible = false;
+    bool deleteTaskDialogueVisible = false;
+
+    // BUTTON VISIBILITY BOOLS
+    bool editProjectVisible = false;
+    bool addSectionVisible = false;
+
+    #endregion
+
+    #region INITIALIZATION & OTHER NECESSARY STUFF
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tempP = await GetProjects();
+        //listProjects = JsonSerializer.Deserialize<Project[]>(tempP).ToList<Project>;
+        listSections = await GetSections();
+        listTaskItems = await GetTaskItems();
+    }
+
+    public async Task<List<Project>> GetProjects()
+    {
+        return await Http.GetFromJsonAsync<List<Project>>("Project/Index");
+        //return await Http.GetStringAsync()
+    }
+
+    public async Task<List<Section>> GetSections()
+    {
+        return await Http.GetFromJsonAsync<List<Section>>("Section/Index");
+    }
+
+    public async Task<List<TaskItem>> GetTaskItems()
+    {
+        return await Http.GetFromJsonAsync<List<TaskItem>>("TaskItem/Index");
+    }
+
+    public async Task UpdateProject(Project project)
+    {
+        await Http.PostAsJsonAsync($"{Http.BaseAddress}Project/EditProject", project);
+    }
+    public async Task UpdateSection(Section section)
+    {
+        await Http.PostAsJsonAsync($"{Http.BaseAddress}Section/EditSection", section);
+    }
+    public async Task UpdateTaskItem(TaskItem taskItem)
+    {
+        await Http.PostAsJsonAsync($"{Http.BaseAddress}TaskItem/EditTaskItem", taskItem);
+    }
+    public async Task AddProject(Project project)
+    {
+        await Http.PostAsJsonAsync($"{Http.BaseAddress}Project/AddProject", project);
+    }
+    public async Task AddSection(Section section)
+    {
+        await Http.PostAsJsonAsync($"{Http.BaseAddress}Section/AddSection", section);
+    }
+    public async Task AddTaskItem(TaskItem taskItem)
+    {
+        await Http.PostAsJsonAsync($"{Http.BaseAddress}TaskItem/AddTaskItem", taskItem);
+    }
+    public async Task DeleteProject(int id)
+    {
+        await Http.GetFromJsonAsync<Project>($"Project/Delete/{id}");        
+    }
+    public async Task DeleteSection(int id)
+    {
+        await Http.GetFromJsonAsync<Section>($"Section/Delete/{id}");        
+    }
+    public async Task DeleteTaskItem(int id)
+    {
+        await Http.GetFromJsonAsync<TaskItem>($"TaskItem/Delete/{id}");
+    }
+
+    private void ItemUpdated(MudItemDropInfo<TaskItem> dropItem)
+    {
+        dropItem.Item.SectionIdentifier = dropItem.DropzoneIdentifier;
+    }
+
+    #endregion
+
+    #region DROPDOWN METHODS
+
+    void SelectProject(string projectName)
+    {
+        for (int i = 0; i < listProjects.Count; i++)
+        {
+            if (listProjects.ElementAt(i).Name == projectName)
+            {
+                projectPlaceholder = listProjects.ElementAt(i); // new method for this
+                ShowButtons();
+                i = listProjects.Count + 1;
+            }
+        }
+    }
+
+    #endregion
+
+    #region SAVE KANBAN OBJECT CHANGE METHODS
+
+    Project ProjectSaveChanges(Project project)
+    {
+        int contextId = project.Id;
+
+        for (int i = 0; i < listProjects.Count; i++)
+        {
+            if (contextId == listProjects.ElementAt(i).Id)
+            {
+                listProjects.ElementAt(i).Name = project.Name;
+
+                break;
+            }
+        }
+        projectDialogueVisible = ModalDialogueVisibility(projectDialogueVisible);
+
+        return project;
+    }
+
+    Section SectionSaveChanges(Section section)
+    {
+        int contextId = section.Id;
+
+        for (int i = 0; i < listSections.Count; i++)
+        {
+            if (contextId == listSections.ElementAt(i).Id)
+            {
+                listSections.ElementAt(i).Name = section.Name;
+
+                break;
+            }
+        }
+        sectionDialogueVisible = ModalDialogueVisibility(sectionDialogueVisible);
+
+        return section;
+    }
+
+    TaskItem TaskItemSaveChanges(TaskItem taskItem)
+    {
+        int contextId = taskItem.Id;
+
+        for (int i = 0; i < listTaskItems.Count; i++)
+        {
+            if (contextId == listTaskItems.ElementAt(i).Id)
+            {
+                listTaskItems.ElementAt(i).Name = taskItem.Name;
+                listTaskItems.ElementAt(i).Description = taskItem.Description;
+                listTaskItems.ElementAt(i).Points = taskItem.Points;
+
+                break;
+            }
+        }
+        taskDialogueVisible = ModalDialogueVisibility(taskDialogueVisible);
+
+        return taskItem;
+    }
+
+    #endregion
+
+    #region ADD NEW KANBAN OBJECTS
+
+    void AddProject()
+    {
+        int id = 0;
+
+        if (listProjects.Count != 0)
+        {
+            id = listProjects.Last().Id + 1;
+        }
+
+        listProjects.Add(new Project(id, "New Project"));
+
+        projectPlaceholder = listProjects.Last();
+        AddProject(listProjects.Last());
+        ShowButtons();
+
+        AddProjectDataCreate(listProjects.Last());
+    }
+
+    private async Task AddProjectDataCreate(Project project)
+    {
+        await jsRuntime.InvokeVoidAsync("writeProjectData", project.Id, project.Name);
+    }
+
+    void AddSection()
+    {
+        int id = 0;
+
+        if (listSections.Count != 0)
+        {
+            id = listSections.Last().Id + 1;
+        }
+
+        listSections.Add(new Section(id, "New Section", projectPlaceholder.Id));
+    }
+
+    void AddTaskItem(string sectionId)
+    {
+        int id = 0;
+
+        if (listTaskItems.Count != 0)
+        {
+            id = listTaskItems.Last().Id + 1;
+        }
+
+        listTaskItems.Add(new TaskItem(id, "New Task", "Enter a description", 0, sectionId));
+    }
+    #endregion
+
+    #region DELETE OBJECT MODAL METHODS
+
+    // Maybe a delete manager method?
+    // Which passes lists and ids
+    // Creates local lists of id to iterate through and delete?
+    // Might shorten deletion code
+
+    void DeleteProject(Project project)
+    {
+        int contextId = project.Id;
+
+        for (int i = 0; i < listProjects.Count; i++)
+        {
+            if (contextId == listProjects.ElementAt(i).Id)
+            {
+                listProjects.RemoveAt(i);
+                break;
+            }
+        }
+        MultiDeleteSection(contextId);
+
+        projectPlaceholder = noProject;
+        HideButtons();
+
+        deleteProjectDialogueVisible = ModalDialogueVisibility(deleteProjectDialogueVisible);
+        projectDialogueVisible = ModalDialogueVisibility(projectDialogueVisible);
+    }
+
+    void DeleteSection(Section section)
+    {
+        int contextId = section.Id;
+
+        for (int i = 0; i < listSections.Count; i++)
+        {
+            if (contextId == listSections.ElementAt(i).Id)
+            {
+                listSections.RemoveAt(i);
+                break;
+            }
+        }
+        MultiDeleteTaskItem(contextId);
+
+        deleteSectionDialogueVisible = ModalDialogueVisibility(deleteSectionDialogueVisible);
+        sectionDialogueVisible = ModalDialogueVisibility(sectionDialogueVisible);
+    }
+
+    void DeleteTaskItem(TaskItem taskItem)
+    {
+        int contextId = taskItem.Id;
+
+        for (int i = 0; i < listTaskItems.Count; i++)
+        {
+            if (contextId == listTaskItems.ElementAt(i).Id)
+            {
+                listTaskItems.RemoveAt(i);
+                break;
+            }
+        }
+        deleteTaskDialogueVisible = ModalDialogueVisibility(deleteTaskDialogueVisible);
+        taskDialogueVisible = ModalDialogueVisibility(taskDialogueVisible);
+    }
+
+    void MultiDeleteSection(int projectId)
+    {
+        int sectionId;
+
+        for (int i = listSections.Count - 1; i >= 0; i--)
+        {
+            if (projectId == listSections.ElementAt(i).ProjectId)
+            {
+                sectionId = listSections.ElementAt(i).Id;
+                MultiDeleteTaskItem(sectionId);
+                listSections.RemoveAt(i);
+            }
+        }
+    }
+
+    void MultiDeleteTaskItem(int sectionId)
+    {
+        for (int i = listTaskItems.Count - 1; i >= 0; i--)
+        {
+            if (sectionId.ToString() == listTaskItems.ElementAt(i).SectionIdentifier)
+            {
+                listTaskItems.RemoveAt(i);
+            }
+        }
+    }
+
+    #endregion
+
+    #region SET MODAL INFORMATION
+
+    void SetDialogueInfoSection(Section section)
+    {
+        sectionPlaceholder = section;
+
+        sectionDialogueVisible = ModalDialogueVisibility(sectionDialogueVisible);
+    }
+
+    void SetDialogueInfoTaskItem(TaskItem taskItem)
+    {
+        taskItemPlaceHolder = taskItem;
+
+        taskDialogueVisible = ModalDialogueVisibility(taskDialogueVisible);
+    }
+
+    #endregion
+
+    #region FRONTEND VISIBILITIES
+
+    void ShowButtons()
+    {
+        addSectionVisible = true;
+        editProjectVisible = true;
+    }
+
+    void HideButtons()
+    {
+        addSectionVisible = false;
+        editProjectVisible = false;      
+    }
+
+    bool ModalDialogueVisibility(bool modalVisible)
+    {
+        if (modalVisible == false)
+        {
+            modalVisible = true;
+        }
+        else
+        {
+            modalVisible = false;
+        }
+
+        return modalVisible;
+    }
+
+    #endregion
+
+    /// <summary>
+    /// /////////////////////////////////////////////////////////////////////////////////////////////
+    /// </summary>
+
+    #region TEST BUTTONS
+
+    void OutputInfo()
+    {
+        Console.WriteLine("TASK ITEMS:");
+        foreach (var item in listTaskItems)
+        {
+            Console.WriteLine("item id: " + item.Id);
+            Console.WriteLine("item name: " + item.Name);
+            Console.WriteLine("item description: " + item.Description);
+            Console.WriteLine("item points: " + item.Points);
+        }
+        Console.WriteLine("SECTIONS:");
+        foreach (var section in listSections)
+        {
+            Console.WriteLine("section id: " + section.Id);
+            Console.WriteLine("section name: " + section.Name);
+            Console.WriteLine("section project id: " + section.ProjectId);
+        }
+        Console.WriteLine("PROJECTS:");
+        foreach (var project in listProjects)
+        {
+            Console.WriteLine("project id: " + project.Id);
+            Console.WriteLine("project name: " +project.Name);
+        }
+    }
+    void DeleteTest()
+    {
+        listSections.RemoveAt(0); 
+        // Of course remove the selected item not index 0
+        // Needs to check if list is empty
+        // AND when deleting section or project, delete all contents as well.
+        // And add a modal like "Are your sure to want to delete object and all of its content? This action is irreversible!" Yes/No
+    }
+
+    #endregion
+
+    #region TEST DATA
+
+    void AddTestData()
+    {
+        //TEST PROJECTS
+        listProjects.Add(new(0, "Zero"));
+        listProjects.Add(new(1, "One"));
+
+        //TEST SECTIONS
+        listSections.Add(new(0, "section0", 0));
+        listSections.Add(new(1, "section1", 0));
+        listSections.Add(new(2, "section2", 1));
+        listSections.Add(new(3, "section3", 1));
+
+        //TEST TASK ITEMS
+        listTaskItems.Add(new(0, "Walk Dog", "This is a task description. Here we describe briefly, HOW or WHAT is needed to walk the dog.", 1, "0"));
+        listTaskItems.Add(new(1, "Turn On Computer", "This is a task description. Here we describe briefly, HOW or WHAT is needed to seduce the computer.", 2, "0"));
+        listTaskItems.Add(new(2, "Do Kung Fu", "This is a task description. Here we describe briefly, HOW or WHAT is needed to do kung fu.", 3, "1"));
+        listTaskItems.Add(new(3, "Brush teeth", "This is a task description. Here we describe briefly, HOW or WHAT is needed to brush your teeth.", 4, "1"));
+        listTaskItems.Add(new(4, "Cook Food", "This is a task description. Here we describe briefly, HOW or WHAT is needed to cook some food.", 5, "2"));
+        listTaskItems.Add(new(5, "Chop Wood", "This is a task description. Here we describe briefly, HOW or WHAT is needed to chop some wood.", 6, "2"));
+        listTaskItems.Add(new(6, "Start Car", "This is a task description. Here we describe briefly, HOW or WHAT is needed to start the car.", 7, "3"));
+        listTaskItems.Add(new(7, "Eat Soup", "This is a task description. Here we describe briefly, HOW or WHAT is needed to eat some soup.", 8, "3"));
+
+    }
+
+    #endregion
+
+}

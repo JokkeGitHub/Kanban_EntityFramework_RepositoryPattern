@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33530.505
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kanban_EntityFramework_RepositoryPattern.Server", "Kanban_EntityFramework_RepositoryPattern\Server\Kanban_EntityFramework_RepositoryPattern.Server.csproj", "{CEBBC5AA-1191-4B3B-BE3B-A949C8AC1D40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kanban_EntityFramework_RepositoryPattern.Client", "Kanban_EntityFramework_RepositoryPattern\Client\Kanban_EntityFramework_RepositoryPattern.Client.csproj", "{45AFDCA6-1CE5-4F3C-A0EF-B55303036C2E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kanban_EntityFramework_RepositoryPattern.Shared", "Kanban_EntityFramework_RepositoryPattern\Shared\Kanban_EntityFramework_RepositoryPattern.Shared.csproj", "{2D14BB8E-B505-472D-8F5C-47D5674C2E93}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CEBBC5AA-1191-4B3B-BE3B-A949C8AC1D40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEBBC5AA-1191-4B3B-BE3B-A949C8AC1D40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEBBC5AA-1191-4B3B-BE3B-A949C8AC1D40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEBBC5AA-1191-4B3B-BE3B-A949C8AC1D40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45AFDCA6-1CE5-4F3C-A0EF-B55303036C2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45AFDCA6-1CE5-4F3C-A0EF-B55303036C2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45AFDCA6-1CE5-4F3C-A0EF-B55303036C2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45AFDCA6-1CE5-4F3C-A0EF-B55303036C2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D14BB8E-B505-472D-8F5C-47D5674C2E93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D14BB8E-B505-472D-8F5C-47D5674C2E93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D14BB8E-B505-472D-8F5C-47D5674C2E93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D14BB8E-B505-472D-8F5C-47D5674C2E93}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6730AFA7-77C4-46CE-8735-350BA65B1C6C}
+	EndGlobalSection
+EndGlobal
