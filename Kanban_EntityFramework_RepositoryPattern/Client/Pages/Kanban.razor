@@ -243,6 +243,7 @@
         //listProjects = JsonSerializer.Deserialize<Project[]>(tempP).ToList<Project>;
         listSections = await GetSections();
         listTaskItems = await GetTaskItems();
+
     }
 
     public async Task<List<Project>> GetProjects()
