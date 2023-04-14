@@ -25,7 +25,7 @@ namespace Kanban_EntityFramework_RepositoryPattern.Server.Controllers
         }
 
         [HttpGet]
-        public ActionResult zAddTaskItem()
+        public ActionResult AddTaskItem()
         {
             return View();
         }

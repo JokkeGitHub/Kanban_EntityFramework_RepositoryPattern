@@ -239,10 +239,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var tempP = await GetProjects();
+        listProjects = await Http.GetFromJsonAsync<List<Project>>("api/Project/GetAll");
+        //var tempP = await GetProjects();
         //listProjects = JsonSerializer.Deserialize<Project[]>(tempP).ToList<Project>;
-        listSections = await GetSections();
-        listTaskItems = await GetTaskItems();
+        //listSections = await GetSections();
+        //listTaskItems = await GetTaskItems();
 
     }
 

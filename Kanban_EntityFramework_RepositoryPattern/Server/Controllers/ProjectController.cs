@@ -3,7 +3,8 @@ using Kanban_EntityFramework_RepositoryPattern.Shared;
 
 namespace Kanban_EntityFramework_RepositoryPattern.Server.Controllers
 {
-
+    [ApiController]
+    [Route("api/[controller]")]
     public class ProjectController : Controller
     {
         private IProjectRepository _projectRepository;
@@ -19,11 +20,18 @@ namespace Kanban_EntityFramework_RepositoryPattern.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public IEnumerable<Project> GetAll()
+        {
+            return _projectRepository.GetAll();
+        }
+        /*
+        [HttpGet]
+        public ActionResult Index()
         {
             var model = _projectRepository.GetAll();
             return View(model);
         }
+        */
 
         [HttpGet]
         public ActionResult AddProject()
